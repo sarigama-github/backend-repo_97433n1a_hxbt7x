@@ -1,48 +1,64 @@
 """
-Database Schemas
+Database Schemas for One Piece TCG Portfolio Platform
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model maps to a MongoDB collection (lowercase class name).
 """
-
+from typing import Optional, List, Literal
 from pydantic import BaseModel, Field
-from typing import Optional
+from datetime import datetime
 
-# Example schemas (replace with your own):
-
+# Users (optional for future multi-user). For now we will default to a single demo user.
 class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
     name: str = Field(..., description="Full name")
     email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    currency: str = Field("EUR", description="Primary currency code")
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+# Master catalog entries (cards or sealed products). In real life this would be pre-populated.
+class CatalogItem(BaseModel):
+    
+    category: Literal["card_raw", "card_graded", "sealed"] = Field(..., description="Type of item")
+    name: str = Field(..., description="Card or product name")
+    set_name: Optional[str] = Field(None, description="Set or product line")
+    number: Optional[str] = Field(None, description="Card number / product code")
+    variant: Optional[str] = Field(None, description="Foil, parallel, alt art, etc.")
+    image_url: Optional[str] = Field(None, description="Cover or card image")
+    
+    # External refs (TCGPlayer, CardMarket, eBay, etc.)
+    external_ids: Optional[dict] = Field(default_factory=dict, description="External marketplace IDs")
 
-# Add your own schemas here:
-# --------------------------------------------------
+# A holding in the user's portfolio (one line can represent N quantity of the same item)
+class CollectionItem(BaseModel):
+    user_id: Optional[str] = Field(None, description="Owner id")
+    catalog_id: Optional[str] = Field(None, description="Reference to catalog item _id as string")
+    category: Literal["card_raw", "card_graded", "sealed"]
+    name: str
+    set_name: Optional[str] = None
+    number: Optional[str] = None
+    variant: Optional[str] = None
+    grade: Optional[str] = Field(None, description="If graded: PSA 10, BGS 9.5, etc.")
+    quantity: int = Field(1, ge=1)
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+    # Acquisition
+    purchase_price: float = Field(0, ge=0)
+    currency: str = Field("EUR")
+    purchase_date: Optional[datetime] = None
+    source: Optional[str] = None
+
+# Transactions for realized P&L (buys/sells)
+class Transaction(BaseModel):
+    user_id: Optional[str] = None
+    collection_id: Optional[str] = Field(None, description="Link to CollectionItem")
+    type: Literal["buy", "sell"]
+    quantity: int = Field(1, ge=1)
+    price_total: float = Field(..., ge=0, description="Total price for the trade in the given currency")
+    currency: str = Field("EUR")
+    date: datetime = Field(default_factory=datetime.utcnow)
+    notes: Optional[str] = None
+
+# Price snapshot for a catalog item (used to compute unrealized P&L and trends)
+class PriceSnapshot(BaseModel):
+    catalog_id: str
+    currency: str = Field("EUR")
+    price: float = Field(..., ge=0)
+    source: str = Field("mock", description="Data source identifier")
+    taken_at: datetime = Field(default_factory=datetime.utcnow)
