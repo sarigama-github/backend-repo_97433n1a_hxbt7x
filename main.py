@@ -1,6 +1,8 @@
 import os
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
+import hashlib
+import random
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -141,6 +143,20 @@ def list_collection():
     return [to_str_id(d) for d in docs]
 
 
+@app.put("/collection/{item_id}")
+def update_collection_item(item_id: str, payload: Dict[str, Any]):
+    # sanitize fields to allow only known updates
+    allowed = {"quantity", "purchase_price", "currency", "grade", "purchase_date"}
+    update_data = {k: v for k, v in payload.items() if k in allowed}
+    if not update_data:
+        raise HTTPException(400, "No valid fields to update")
+    res = db["collectionitem"].update_one({"_id": oid(item_id)}, {"$set": update_data})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Item not found")
+    d = db["collectionitem"].find_one({"_id": oid(item_id)})
+    return to_str_id(d)
+
+
 @app.delete("/collection/{item_id}")
 def delete_collection_item(item_id: str):
     res = db["collectionitem"].delete_one({"_id": oid(item_id)})
@@ -188,13 +204,45 @@ def add_price_snapshot(payload: PriceCreate):
     return to_str_id(d)
 
 
+# Lightweight mockable scraping: deterministic pseudo-price by name + variant
+
+def mock_live_price_for_name(name: str, variant: Optional[str] = None) -> float:
+    base = f"{name or ''}|{variant or ''}"
+    h = hashlib.sha256(base.encode()).hexdigest()
+    seed = int(h[:8], 16)
+    rng = random.Random(seed)
+    # Price between 5 and 1000, skewed
+    return round(rng.uniform(5, 1000) * (1.0 + rng.random() * 0.1), 2)
+
+
+@app.get("/prices/fetch")
+def fetch_live_price(catalog_id: str, currency: str = "EUR"):
+    cat = db["catalogitem"].find_one({"_id": oid(catalog_id)})
+    if not cat:
+        raise HTTPException(404, "catalog item not found")
+    price_eur = mock_live_price_for_name(cat.get("name"), cat.get("variant"))
+    price = convert(price_eur, currency)
+    snap = {
+        "catalog_id": str(cat["_id"]),
+        "currency": currency,
+        "price": price,
+        "source": "mock_live",
+        "taken_at": datetime.now(timezone.utc),
+    }
+    pid = create_document("pricesnapshot", snap)
+    s = db["pricesnapshot"].find_one({"_id": ObjectId(pid)})
+    return to_str_id(s)
+
+
 @app.get("/prices/latest")
-def latest_price(catalog_id: str, currency: str = "EUR"):
+def latest_price(catalog_id: str, currency: str = "EUR", fetch_if_missing: bool = True):
     snap = db["pricesnapshot"].find({"catalog_id": catalog_id, "currency": currency}).sort("taken_at", -1).limit(1)
-    snap = list(snap)
-    if not snap:
+    snap_l = list(snap)
+    if not snap_l and fetch_if_missing:
+        return fetch_live_price(catalog_id=catalog_id, currency=currency)
+    if not snap_l:
         return {"catalog_id": catalog_id, "currency": currency, "price": None}
-    return to_str_id(snap[0])
+    return to_str_id(snap_l[0])
 
 
 # ----- Portfolio analytics -----
@@ -215,14 +263,19 @@ def portfolio_summary(currency: str = "EUR"):
         if catalog_id not in latest_by_catalog:
             snap = db["pricesnapshot"].find({"catalog_id": catalog_id, "currency": currency}).sort("taken_at", -1).limit(1)
             snap = list(snap)
-            latest_by_catalog[catalog_id] = snap[0]["price"] if snap else 0.0
+            latest_by_catalog[catalog_id] = float(snap[0]["price"]) if snap else 0.0
 
     # also compute 24h change if available (using two snapshots)
     change24: Dict[str, float] = {}
     for cid in list(latest_by_catalog.keys()):
         snaps = list(db["pricesnapshot"].find({"catalog_id": cid, "currency": currency}).sort("taken_at", -1).limit(2))
         if len(snaps) == 2 and snaps[1]["price"]:
-            change = (snaps[0]["price"] - snaps[1]["price"]) / snaps[1]["price"]
+            try:
+                prev = float(snaps[1]["price"]) or 0.0
+                cur = float(snaps[0]["price"]) or 0.0
+                change = (cur - prev) / prev if prev else 0.0
+            except Exception:
+                change = 0.0
             change24[cid] = change
         else:
             change24[cid] = 0.0
@@ -232,7 +285,7 @@ def portfolio_summary(currency: str = "EUR"):
         cost = float(h.get("purchase_price", 0.0)) * qty
         total_cost_eur += cost if h.get("currency", "EUR") == "EUR" else cost / RATES.get(h.get("currency", "EUR"), 1.0)
         current_price = latest_by_catalog.get(h.get("catalog_id"), 0.0)
-        current_val = current_price * qty
+        current_val = float(current_price) * qty
         total_value_eur += current_val
         items_summary.append({
             "item": to_str_id(h),
@@ -276,7 +329,11 @@ def trends_timeseries(currency: str = "EUR", days: int = 30):
         if epoch < since:
             continue
         day = datetime.utcfromtimestamp(epoch).strftime("%Y-%m-%d")
-        day_map.setdefault(day, {})[s["catalog_id"]] = float(s["price"])
+        try:
+            price_val = float(s.get("price", 0.0))
+        except Exception:
+            price_val = 0.0
+        day_map.setdefault(day, {})[s["catalog_id"]] = price_val
 
     # For each day, compute portfolio value using quantities
     holdings = list(db["collectionitem"].find({}))
@@ -292,7 +349,7 @@ def trends_timeseries(currency: str = "EUR", days: int = 30):
             price = prices.get(cid)
             if price is None:
                 continue
-            value += price * qty
+            value += float(price) * qty
         series.append({"date": day, "value": convert(value, currency)})
 
     return {"currency": currency, "series": series}
