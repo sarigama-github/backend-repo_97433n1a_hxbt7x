@@ -1,15 +1,44 @@
 INFO:     Will watch for changes in these directories: ['/home/workspace']
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [169] using StatReload
-INFO:     Started server process [171]
+INFO:     Started reloader process [217] using StatReload
+INFO:     Started server process [219]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-INFO:     172.20.0.1:52966 - "HEAD / HTTP/1.1" 405 Method Not Allowed
-INFO:     172.20.0.1:52984 - "GET /collection HTTP/1.1" 200 OK
-INFO:     172.20.0.1:52984 - "GET /collection HTTP/1.1" 200 OK
-INFO:     172.20.0.1:52982 - "GET /portfolio/summary?currency=EUR HTTP/1.1" 200 OK
-INFO:     172.20.0.1:52984 - "GET /portfolio/summary?currency=EUR HTTP/1.1" 200 OK
-INFO:     172.20.0.1:52986 - "GET /portfolio/summary?currency=EUR HTTP/1.1" 200 OK
-INFO:     172.20.0.1:36776 - "GET /collection HTTP/1.1" 200 OK
-INFO:     172.20.0.1:36776 - "GET /collection HTTP/1.1" 200 OK
-INFO:     172.20.0.1:52986 - "GET /portfolio/summary?currency=EUR HTTP/1.1" 200 OK
+INFO:     172.20.0.1:35358 - "HEAD / HTTP/1.1" 405 Method Not Allowed
+INFO:     172.20.0.1:35380 - "GET /collection HTTP/1.1" 200 OK
+INFO:     172.20.0.1:35374 - "GET /trends/timeseries?currency=EUR&days=60 HTTP/1.1" 200 OK
+INFO:     172.20.0.1:35380 - "GET /collection HTTP/1.1" 200 OK
+INFO:     172.20.0.1:35374 - "GET /trends/timeseries?currency=EUR&days=60 HTTP/1.1" 200 OK
+INFO:     172.20.0.1:35382 - "GET /portfolio/summary?currency=EUR HTTP/1.1" 200 OK
+INFO:     172.20.0.1:35374 - "GET /portfolio/summary?currency=EUR HTTP/1.1" 200 OK
+INFO:     172.20.0.1:35382 - "GET /portfolio/summary?currency=EUR HTTP/1.1" 200 OK
+INFO:     172.20.0.1:35374 - "GET /portfolio/summary?currency=EUR HTTP/1.1" 200 OK
+INFO:     172.20.0.1:35394 - "GET /collection HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49840 - "GET /collection HTTP/1.1" 200 OK
+INFO:     172.20.0.1:35394 - "GET /trends/timeseries?currency=EUR&days=60 HTTP/1.1" 200 OK
+INFO:     172.20.0.1:35392 - "GET /portfolio/summary?currency=EUR HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49840 - "GET /trends/timeseries?currency=EUR&days=60 HTTP/1.1" 200 OK
+INFO:     172.20.0.1:35394 - "GET /portfolio/summary?currency=EUR HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49840 - "GET /portfolio/summary?currency=EUR HTTP/1.1" 200 OK
+INFO:     172.20.0.1:35394 - "GET /portfolio/summary?currency=EUR HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49854 - "GET /catalog/search?q=op05-067%20 HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49854 - "GET /catalog/search?q=op05-067%20 HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49854 - "GET /catalog/search?q=op05-067%20 HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49854 - "GET /catalog/search?q=op05-067%20 HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49854 - "GET /catalog/search?q=op05-067%20 HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49854 - "OPTIONS /catalog HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49854 - "POST /catalog HTTP/1.1" 201 Created
+INFO:     172.20.0.1:49854 - "POST /catalog HTTP/1.1" 201 Created
+INFO:     172.20.0.1:49854 - "GET /catalog/search?q=OP HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49854 - "OPTIONS /collection HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49854 - "POST /collection HTTP/1.1" 201 Created
+INFO:     172.20.0.1:49854 - "POST /collection HTTP/1.1" 201 Created
+INFO:     172.20.0.1:49854 - "OPTIONS /prices/snapshot HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49854 - "POST /prices/snapshot HTTP/1.1" 201 Created
+INFO:     172.20.0.1:49854 - "POST /prices/snapshot HTTP/1.1" 201 Created
+INFO:     172.20.0.1:49854 - "POST /prices/snapshot HTTP/1.1" 201 Created
+INFO:     172.20.0.1:49854 - "POST /prices/snapshot HTTP/1.1" 201 Created
+INFO:     172.20.0.1:43140 - "GET /collection HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49854 - "GET /portfolio/summary?currency=EUR HTTP/1.1" 200 OK
+INFO:     172.20.0.1:43140 - "GET /collection HTTP/1.1" 200 OK
+INFO:     172.20.0.1:49854 - "GET /portfolio/summary?currency=EUR HTTP/1.1" 200 OK
